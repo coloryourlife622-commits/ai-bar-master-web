@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIバーマスター 動画切り替え確認</title>
+<link rel="stylesheet" href="/avatar.css">
+<style>
+  body { max-width: 540px; margin: 24px auto; padding: 16px; background: #211c19; color: #faf3e8; font-family: sans-serif; }
+  .avatar-container { max-height: 55vh; margin: auto; }
+  form { display: flex; gap: 8px; margin-top: 16px; }
+  input { flex: 1; min-width: 0; padding: 12px; }
+  #chat-output { white-space: pre-wrap; }
+</style>
+<h1>AIバーマスター</h1>
+<div class="avatar-container" aria-label="バーマスターのアバター">
+  <video class="avatar-video" muted playsinline loop></video>
+  <video class="avatar-video" muted playsinline loop></video>
+</div>
+<p id="status" role="status">動画を読み込み中</p>
+<form><input aria-label="メッセージ" required placeholder="今夜のお話をどうぞ"><button>送信</button></form>
+<p id="chat-output"></p>
+<p>動作確認用の疑似応答です。実際のAI APIには接続していません。</p>
+<script type="module">
+  import { AvatarManager, createConversationController, typeWriterEffect } from '/avatarControl.js';
+  const container = document.querySelector('.avatar-container');
+  const status = document.querySelector('#status');
+  container.addEventListener('avatarchange', event => { status.textContent = event.detail.state; });
+  container.addEventListener('avatarerror', event => { status.textContent = `動画を読み込めません: ${event.detail.state}（public/assets/ を確認してください）`; });
+  const avatar = new AvatarManager(container);
+  const conversation = createConversationController({
+    avatar,
+    fetchReply: async (message, { signal }) => {
+      await new Promise(resolve => setTimeout(resolve, 1800));
+      signal.throwIfAborted();
+      return { text: 'それは大変でしたね…。今夜はゆっくりお話ししていってください。', emotion: 'empathy' };
+    },
+    renderReply: (text, options) => typeWriterEffect(document.querySelector('#chat-output'), text, options),
+  });
+  document.querySelector('form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const input = document.querySelector('input');
+    const message = input.value;
+    input.value = '';
+    try { await conversation.submit(message); }
+    catch { status.textContent = '返答を取得できませんでした。再度送信してください。'; }
+  });
+</script>
+</html>
